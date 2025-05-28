@@ -1,41 +1,53 @@
-import requests
-from bs4 import BeautifulSoup
+import tkinter as tk
+from tkinter import messagebox
 import csv
+import os
 
-# URL to scrape (a demo book website)
-url = "http://books.toscrape.com/"
-
-try:
-    # Send HTTP request
-    response = requests.get(url)
-    response.raise_for_status()  # Raise error for bad status codes
-    
-    # Parse HTML content
-    soup = BeautifulSoup(response.text, 'html.parser')
-    
-    # Find all book containers
-    books = soup.find_all('article', class_='product_pod')
-    
-    # Prepare to store scraped data
-    scraped_data = []
-    
-    # Extract information from each book
-    for book in books:
-        title = book.h3.a['title']
-        price = book.find('p', class_='price_color').text
-        scraped_data.append({'title': title, 'price': price})
-    
-    # Save to CSV file
-    with open('books_data.csv', 'w', newline='', encoding='utf-8') as csvfile:
-        fieldnames = ['title', 'price']
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+def save_contact():
+    try:
+        name = name_entry.get().strip()
+        phone = phone_entry.get().strip()
         
-        writer.writeheader()
-        writer.writerows(scraped_data)
-    
-    print(f"Successfully scraped {len(scraped_data)} books. Data saved to books_data.csv")
+        if not name or not phone:
+            messagebox.showwarning("Warning", "Name and Phone are required!")
+            return
+            
+        # Create the file if it doesn't exist
+        file_exists = os.path.isfile('contacts.csv')
+        
+        with open('contacts.csv', 'a', newline='') as file:
+            writer = csv.writer(file)
+            if not file_exists:
+                writer.writerow(["Name", "Phone"])  # Write header if new file
+            writer.writerow([name, phone])
+            
+        messagebox.showinfo("Success", "Contact saved!")
+        name_entry.delete(0, tk.END)
+        phone_entry.delete(0, tk.END)
+        
+    except PermissionError:
+        messagebox.showerror("Error", "Cannot write to file. Check file permissions.")
+    except Exception as e:
+        messagebox.showerror("Error", f"An error occurred: {str(e)}")
 
-except requests.exceptions.RequestException as e:
-    print(f"Error fetching the webpage: {e}")
-except Exception as e:
-    print(f"An error occurred: {e}")
+# Create main window
+root = tk.Tk()
+root.title("Mini Contact Book")
+
+# Make the window a bit larger
+root.geometry("300x150")
+
+# Create and place widgets
+tk.Label(root, text="Name:").grid(row=0, column=0, padx=10, pady=5, sticky='e')
+tk.Label(root, text="Phone:").grid(row=1, column=0, padx=10, pady=5, sticky='e')
+
+name_entry = tk.Entry(root, width=25)
+name_entry.grid(row=0, column=1, padx=10, pady=5)
+
+phone_entry = tk.Entry(root, width=25)
+phone_entry.grid(row=1, column=1, padx=10, pady=5)
+
+save_btn = tk.Button(root, text="Save Contact", command=save_contact)
+save_btn.grid(row=2, column=0, columnspan=2, pady=10)
+
+root.mainloop()
